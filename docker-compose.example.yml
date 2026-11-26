@@ -1,0 +1,33 @@
+# Example only: adapt your existing Aurral service instead of copying this wholesale.
+# The point is one media mount at the same container path in both services (Aurral's recommended layout).
+services:
+  mornye:
+    image: ghcr.io/mornyeapp/mornye-python:latest
+    command: ["--web", "--host", "0.0.0.0", "--port", "8000"]
+    user: "${PUID:-1000}:${PGID:-1000}"
+    shm_size: "1gb"
+    environment:
+      # Your own extension registry (Mornye bundles none).
+      MORNYE_REGISTRIES: "${MORNYE_REGISTRIES}"
+      MORNYE_WEB_TOKEN: "${MORNYE_WEB_TOKEN}"
+      MORNYE_DOWNLOAD_DIR: /data/mornye-downloads
+      MORNYE_DATA_DIR: /config
+      MORNYE_PROGRESS_BARS: "0"
+    volumes:
+      - /srv/media:/data   # the same media mount as Aurral, at the same path
+      - ./mornye-config:/config
+    restart: unless-stopped
+    # No "ports:" needed: Aurral reaches it at http://mornye:8000 on the compose network.
+
+  aurral:
+    # ...your existing Aurral service...
+    volumes:
+      - /srv/media:/data
+      # - ./aurral-plugins:<Aurral data folder>/plugins   # only for a manual plugin install
+
+# Plugin settings for this layout:
+#   Mornye URL               http://mornye:8000
+#   Mornye web token         the MORNYE_WEB_TOKEN value
+#   Shared download folder   /data/mornye-downloads
+#   (leave "Shared folder path in Aurral" empty: the path is the same in both containers)
+#   Providers                empty = all installed Mornye providers, in Mornye's priority order

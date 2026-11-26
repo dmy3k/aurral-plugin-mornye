@@ -1,0 +1,67 @@
+{
+  "id": "mornye-python",
+  "name": "Mornye Python",
+  "version": "0.2.0",
+  "api": 1,
+  "description": "Uses a Mornye Python server (web mode, running in Docker) as a track download source. Mornye must be configured with its own extensions; this plugin does not include any.",
+  "repository": "https://github.com/CHANGE-ME/aurral-mornye",
+  "uses": [
+    "Your Mornye Python server (REST API)",
+    "Spotify catalogue search via Mornye",
+    "A download folder shared with the Mornye container"
+  ],
+  "settings": [
+    {
+      "key": "url",
+      "label": "Mornye URL",
+      "type": "text",
+      "required": true,
+      "help": "Base URL of Mornye web mode, for example http://mornye:8000"
+    },
+    {
+      "key": "token",
+      "label": "Mornye web token",
+      "type": "password",
+      "help": "The MORNYE_WEB_TOKEN value. Leave empty if Mornye has no token."
+    },
+    {
+      "key": "sharedPathMornye",
+      "label": "Shared download folder",
+      "type": "text",
+      "required": true,
+      "help": "A folder mounted into both Mornye and Aurral. Give its path inside the Mornye container (for example /data/mornye). Use the same container path in Aurral and nothing else is needed."
+    },
+    {
+      "key": "sharedPathAurral",
+      "label": "Shared folder path in Aurral (optional)",
+      "type": "text",
+      "required": false,
+      "help": "Only if Aurral mounts the folder at a different path than Mornye. Aurral's remote path mappings don't apply to plugins. Leave empty to use the path above."
+    },
+    {
+      "key": "quality",
+      "label": "Quality",
+      "type": "text",
+      "help": "LOSSLESS (default), HI_RES_LOSSLESS, HI_RES, HIGH or LOW"
+    },
+    {
+      "key": "services",
+      "label": "Providers",
+      "type": "text",
+      "help": "Leave empty to use every installed, enabled Mornye provider in its own priority order, with fallback (recommended). Otherwise list extension ids, comma-separated."
+    },
+    {
+      "key": "timeoutMinutes",
+      "label": "Download timeout (minutes)",
+      "type": "number",
+      "help": "Give up on a download after this long. Default 60."
+    }
+  ],
+  "test": true,
+  "actions": [],
+  "events": [],
+  "downloadSource": {},
+  "importList": null,
+  "schedule": null,
+  "apiAccess": false
+}
