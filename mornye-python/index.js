@@ -14,7 +14,6 @@ const EMPTY_POLLS = 3;
 const MAX_NETWORK_ERRORS = 8;
 const STALE_MS = 24 * 60 * 60 * 1000;
 
-// ---------------------------------------------------------------- settings
 
 function config(settings) {
   const url = String(settings.url || "").trim().replace(/\/+$/, "");
@@ -40,7 +39,6 @@ function config(settings) {
   };
 }
 
-// ------------------------------------------------------------- Mornye API
 
 async function api(cfg, method, route, body) {
   const headers = { Accept: "application/json" };
@@ -85,7 +83,6 @@ async function searchTracks(cfg, query, limit) {
   return (data?.tracks || []).filter((t) => t && t.id);
 }
 
-// --------------------------------------------------------------- matching
 
 function normalize(value) {
   return String(value || "")
@@ -158,7 +155,6 @@ function trackUrl(track) {
   return track.external_url || `https://open.spotify.com/track/${track.id}`;
 }
 
-// ------------------------------------------------------------------ files
 
 function jobFolder(cfg, id) {
   if (!ID_PATTERN.test(id)) throw new Error("Invalid download id");
@@ -209,16 +205,34 @@ async function listAudio(dir) {
   return found;
 }
 
+// Aurral reads "A - B" filenames as "Artist - Title", and Mornye names files "Title - Artist",
+// which Aurral then denies as a title contradiction. The title alone agrees with the file's tags.
+function fileNameFor(title, source) {
+  const base = String(title || "")
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 150)
+    .replace(/^\.+/, "");
+  return (base || "track") + path.extname(source).toLowerCase();
+}
+
 async function place(source, destination) {
   await fs.mkdir(path.dirname(destination), { recursive: true });
   try {
     await fs.link(source, destination);
+    return "hardlinked";
   } catch {
+    // Linux refuses hardlinks to another user's file (protected_hardlinks), and across filesystems.
+  }
+  try {
     await fs.copyFile(source, destination);
+    return "copied";
+  } catch (error) {
+    throw new Error(`Aurral can't read ${source} written by Mornye (${error.code || error.message})`);
   }
 }
 
-// ------------------------------------------------------------------ state
 
 async function saveState(dataFolder, state) {
   const file = statePath(dataFolder, state.id);
@@ -235,9 +249,15 @@ async function loadState(dataFolder, id) {
   }
 }
 
+// Best effort: a failed cleanup must not fail a download Aurral already has.
 async function removeState(cfg, dataFolder, id) {
-  await fs.rm(jobFolder(cfg, id), { recursive: true, force: true });
-  await fs.rm(statePath(dataFolder, id), { force: true });
+  for (const target of [jobFolder(cfg, id), statePath(dataFolder, id)]) {
+    try {
+      await fs.rm(target, { recursive: true, force: true });
+    } catch (error) {
+      console.warn(`could not remove ${target}: ${error.code || error.message}`);
+    }
+  }
 }
 
 async function sweep(cfg, dataFolder) {
@@ -260,7 +280,6 @@ async function sweep(cfg, dataFolder) {
   }
 }
 
-// ---------------------------------------------------------------- jobs
 
 // Poll Mornye once; returns "active", "done", or throws with Mornye's reason.
 async function poll(cfg, state) {
@@ -298,7 +317,6 @@ async function cancelJob(cfg, state) {
   await api(cfg, "POST", `/api/v1/downloads/${encodeURIComponent(state.jobId)}/cancel`).catch(() => {});
 }
 
-// ----------------------------------------------------------------- plugin
 
 export default {
   async test({ settings }) {
@@ -390,8 +408,14 @@ export default {
 
       const files = await listAudio(jobFolder(cfg, id));
       const file = files.sort((a, b) => b.size - a.size)[0];
-      const name = path.basename(file.full);
-      await place(file.full, path.join(directory, name));
+      const name = fileNameFor(state.title, file.full);
+      let how;
+      try {
+        how = await place(file.full, path.join(directory, name));
+      } catch (error) {
+        return fail(error);
+      }
+      console.log(`"${state.title}": ${how} ${file.full} into ${directory} as "${name}"`);
       await removeState(cfg, dataFolder, id);
       return { done: true, path: name };
     },

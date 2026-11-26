@@ -13,6 +13,9 @@ services:
       MORNYE_DOWNLOAD_DIR: /data/mornye-downloads
       MORNYE_DATA_DIR: /config
       MORNYE_PROGRESS_BARS: "0"
+      # Name files the way Aurral reads them ("Artist - Title"); Mornye's default is "Title - Artist".
+      # Only a default: a filename format saved from Mornye's Settings page takes precedence.
+      MORNYE_FILENAME_FORMAT: "{artist} - {title}"
     volumes:
       - /srv/media:/data   # the same media mount as Aurral, at the same path
       - ./mornye-config:/config

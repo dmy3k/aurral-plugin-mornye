@@ -126,9 +126,9 @@ test("track download: pending then done, file placed in directory", async (t) =>
   assert.equal(job.payload.quality, "LOSSLESS");
   assert.match(job.payload.output_dir, /^\/app\/downloads\/\.aurral-mornye\/[0-9a-f-]{36}$/);
   const answer = await source.status({ settings: m.settings, dataFolder, id: pending, directory });
-  assert.equal(answer.done, true);
+  assert.deepEqual(answer, { done: true, path: "Alpha.flac" });
   assert.equal((await readFile(path.join(directory, answer.path), "utf8")), "audio-https://open.spotify.com/track/t1");
-  assert.deepEqual(await readdir(directory), ["01 - Song.flac"]);
+  assert.deepEqual(await readdir(directory), ["Alpha.flac"]);
   assert.deepEqual(await readdir(path.join(m.root, ".aurral-mornye")), []);
   assert.deepEqual(await readdir(path.join(dataFolder, "jobs")), []);
 });
@@ -178,6 +178,22 @@ test("a transient Mornye error while polling is retried", async (t) => {
   const { pending } = await source.download({ settings: m.settings, dataFolder, result: { title: "x", data: { url: "https://x/1" } } });
   assert.deepEqual(await source.status({ settings: m.settings, dataFolder, id: pending, directory }), { done: false });
   assert.equal((await source.status({ settings: m.settings, dataFolder, id: pending, directory })).done, true);
+});
+
+test("file is renamed to the title, since Aurral reads 'Title - Artist' as 'Artist - Title'", async (t) => {
+  const m = await startMornye(t, { jobBehaviour: () => "running" });
+  const { dataFolder, directory } = await dirs(t);
+  const { pending } = await source.download({
+    settings: m.settings,
+    dataFolder,
+    result: { title: 'AC/DC: "Live"?', data: { url: "https://x/1" } },
+  });
+  const job = [...m.jobs.values()][0];
+  await writeFile(path.join(job.host, "Crack The Code - The Veer Union.FLAC"), "audio");
+  job.status = "done";
+  const answer = await source.status({ settings: m.settings, dataFolder, id: pending, directory });
+  assert.deepEqual(answer, { done: true, path: "AC DC Live.flac" });
+  assert.deepEqual(await readdir(directory), ["AC DC Live.flac"]);
 });
 
 test("invalid ids are rejected", async (t) => {

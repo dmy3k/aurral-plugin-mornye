@@ -1,10 +1,10 @@
 {
   "id": "mornye-python",
   "name": "Mornye Python",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "api": 1,
   "description": "Uses a Mornye Python server (web mode, running in Docker) as a track download source. Mornye must be configured with its own extensions; this plugin does not include any.",
-  "repository": "https://github.com/CHANGE-ME/aurral-mornye",
+  "repository": "https://github.com/dmy3k/aurral-plugin-mornye.git",
   "uses": [
     "Your Mornye Python server (REST API)",
     "Spotify catalogue search via Mornye",

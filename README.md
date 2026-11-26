@@ -10,10 +10,12 @@ complying with local law and provider terms. This plugin only talks to Mornye's 
 
 ## How it works
 
-- **Search**: `GET /api/v1/search` (Spotify catalogue via Mornye), ranked by title, artist, album and duration.
+- **Search**: `GET /api/v1/search`, ranked by title, artist, album and duration.
 - **Track download**: `POST /api/v1/downloads` with a per-download `output_dir` inside a folder shared
   by both containers. Aurral polls `status` until Mornye reports `done`, then the plugin hardlinks
-  (or copies) the audio into Aurral's `directory` and deletes the temporary folder.
+  (or copies) the audio into Aurral's `directory` and deletes the temporary folder. The file is handed over
+  named after the track title only: Mornye names files `Title - Artist`, which Aurral reads as
+  `Artist - Title` and denies as a title contradiction.
 - **Track-only, on purpose.** An album-capable source is pulled into Aurral's release-first step, which
   runs even for single-song requests. Mornye can't deliver an exact release in one download, so that
   queued whole albums whose tracks Aurral then rejected. Album requests still reach this plugin track by
@@ -32,12 +34,12 @@ complying with local law and provider terms. This plugin only talks to Mornye's 
   fallback. Set it only to restrict the plugin to specific extension ids. **Test** lists the providers Mornye reports.
 - Don't point Mornye's "existing library folders" at your Aurral library: Mornye skips tracks it finds
   there and writes nothing, and the download fails with "wrote no audio".
-- Priority: Aurral tries the plugin in its Download clients order (default: after SABnzbd/NZBGet, before
-  qBittorrent). Drag it up, or lower its *Priority*, to have Mornye tried before other clients.
+- Priority: Aurral tries the plugin in its Download clients order. Drag it up, or lower its *Priority*, to have Mornye tried before other clients.
 
 ## Install
 
-In Aurral: **Settings > Plugins**, paste this repository's link. Or copy the `mornye-python`
+In Aurral: **Settings > Plugins**, paste `https://github.com/dmy3k/aurral-plugin-mornye.git`. 
+Or copy the `mornye-python`
 folder into the `plugins` folder of Aurral's data folder. Fill in the settings and press **Test**.
 
 ## Development
@@ -47,4 +49,3 @@ npm test   # node:test against a mock Mornye server; Node 20+, no dependencies
 ```
 
 `mornye-python/index.js` has no imports beyond Node built-ins, as Aurral doesn't install packages.
-Change `repository` in `manifest.json` to your repo URL.
